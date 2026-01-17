@@ -10,8 +10,8 @@ import numpy as np
 class EvalGroup:
     resume_id: int
     job_ids: List[int]
-    labels: np.ndarray         # (M,)
-    scores: np.ndarray         # (M,) e.g. tfidf_cosine
+    labels: np.ndarray
+    scores: np.ndarray         
 
 
 class ResumeJobEvalDataset:
