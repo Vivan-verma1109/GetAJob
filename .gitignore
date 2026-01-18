@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 venv/
+artifacts
 
 .DS_Store
 .vscode/

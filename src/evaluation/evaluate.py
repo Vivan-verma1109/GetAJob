@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Dict, Sequence
-from src.evaluation.dataset import ResumeJobEvalDataset
+from evaluation.eval_dataset import ResumeJobEvalDataset
 from src.evaluation.metrics import recall_at_k, reciprocal_rank, aggregate_metrics
 
 
