@@ -16,7 +16,6 @@ class TfidfTower(nn.Module):
         self.drop = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (B, tfidf_dim)
         x = self.drop(x)
         z = self.proj(x)
         z = F.normalize(z, p=2, dim=1) # unit vectors
