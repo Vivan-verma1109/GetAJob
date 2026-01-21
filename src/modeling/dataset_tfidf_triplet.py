@@ -48,9 +48,10 @@ class TfidfTripletDataset(Dataset):
         dense = x.toarray().astype("float32")[0]
         return torch.from_numpy(dense)
 
-    def __getitem__(self, idx: int) -> TfidfTriplet:
+    def __getitem__(self, idx: int):
         row = self.df.iloc[idx]
         r = self._tfidf_dense(row["resume_text"])
         p = self._tfidf_dense(row["pos_job_text"])
         n = self._tfidf_dense(row["neg_job_text"])
-        return TfidfTriplet(r=r, p=p, n=n)
+        return r, p, n
+

@@ -23,7 +23,7 @@ class TfidfTower(nn.Module):
 
 
 class TwoTowerTfidf(nn.Module):
-    def __init__(self, tfidf_dim: int, embed_dim: int = 128, dropout: float = 0.1):
+    def __init__(self, tfidf_dim: int, embed_dim: int = 128, dropout: float = 0.15):
         super().__init__()
         self.resume = TfidfTower(tfidf_dim, embed_dim, dropout)
         self.job = TfidfTower(tfidf_dim, embed_dim, dropout)
