@@ -6,7 +6,7 @@ from sklearn.preprocessing import normalize
 RESUME_PATH = "data/processed/resumes_clean.csv"
 JOBS_PATH = "data/processed/jobs_model.csv" 
 pos = 5
-neg = 20
+neg = 100
 
 EXCLUDE_TOP_FOR_NEG = 200 # don't sample negatives from top-N ranked jobs
 LOW_SIM_PERCENTILE = 50 # to get the bottom half
