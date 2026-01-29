@@ -42,13 +42,21 @@ def evaluate_with_model(
     tfidf_dir: str,
     ks=(5, 10),
 ) -> Dict[str, float]:
-
     df = pd.read_csv(pairs_csv)
 
+    # load resumes / jobs text
+    resumes = pd.read_csv("data/processed/cleaned/resumes_clean.csv")
+    jobs = pd.read_csv("data/processed/cleaned/jobs_model.csv")
+
+    resume_text = dict(zip(resumes.resume_id, resumes.resume_text))
+    job_text = dict(zip(jobs.job_id, jobs.job_text))
+
     # load vectorizer
-    vectorizer = joblib.load(os.path.join(tfidf_dir, "vectorizer.joblib"))
-    Xr = vectorizer.transform(df["resume_text"])
-    Xj = vectorizer.transform(df["job_text"])
+    vectorizer = joblib.load(os.path.join(tfidf_dir, "tfidf_vectorizer.joblib"))
+
+    Xr = vectorizer.transform(df["resume_id"].map(resume_text))
+    Xj = vectorizer.transform(df["job_id"].map(job_text))
+
 
     # load model
     ckpt = torch.load(model_ckpt, map_location="cpu")
@@ -77,20 +85,31 @@ def evaluate_with_model(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pairs_csv", required=True)
+    parser.add_argument(
+    "--scorer",
+    choices=["tfidf", "model"],
+    default="model",
+    help="How to compute scores"
+    )
     parser.add_argument("--ks", type=int, nargs="+", default=[5, 10])
     parser.add_argument("--model_ckpt", default=None)
     parser.add_argument("--tfidf_dir", default="artifacts/tfidf_v1")
     args = parser.parse_args()
 
-    if args.model_ckpt:
+    if args.scorer == "model":
+        if not args.model_ckpt:
+            raise SystemExit("--model_ckpt is required when --scorer=model")
+
         results = evaluate_with_model(
             args.pairs_csv,
             args.model_ckpt,
             args.tfidf_dir,
             ks=args.ks,
         )
-    else:
+
+    else: 
         results = evaluate_tfidf_baseline(args.pairs_csv, ks=args.ks)
+
 
     print("Evaluation results:")
     for k, v in results.items():
