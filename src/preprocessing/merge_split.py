@@ -3,8 +3,8 @@
 from pathlib import Path
 import pandas as pd
 
-RESUMES_PATH = Path("data/processed/resumes_clean.csv")
-JOBS_PATH    = Path("data/processed/jobs_model.csv")
+RESUMES_PATH = Path("data/processed/cleaned/resumes_clean.csv")
+JOBS_PATH    = Path("data/processed/cleaned/jobs_model.csv")
 SPLITS_DIR   = Path("data/processed/splits")
 
 TRAIN_PAIRS = SPLITS_DIR / "pairs_train.csv"
@@ -47,7 +47,7 @@ def merge_one(pairs: pd.DataFrame, resumes: pd.DataFrame, jobs: pd.DataFrame) ->
             "job_id",
             "label",
             "rank",
-            "tfidf_cosine",
+            "sbert_cosine",
             "category",
             "title",
             "company",

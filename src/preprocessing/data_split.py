@@ -2,9 +2,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PAIRS_PATH = Path("data/processed/pairs_tfidf_k5_n100.csv")
+PAIRS_PATH = Path("data/processed/pairs_sbert_k5_n100.csv")
 
-OUT_DIR = Path("data/processed/splits/k5n100")
+OUT_DIR = Path("data/processed/splits")
 TRAIN_PATH = OUT_DIR / "pairs_train.csv"
 DEV_PATH   = OUT_DIR / "pairs_dev.csv"
 TEST_PATH  = OUT_DIR / "pairs_test.csv"
