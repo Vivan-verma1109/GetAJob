@@ -12,3 +12,4 @@ data/processed/*
 !data/processed/.gitkeep
 
 runFunctions.txt
+personal_notes.txt 
