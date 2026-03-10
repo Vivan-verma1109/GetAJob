@@ -2,7 +2,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PAIRS_PATH = Path("data/processed/pairs_sbert_k5_n100.csv")
+PAIRS_PATH = Path("data/processed/pairs_sbert_k5_hard50_easy50.csv")
 
 OUT_DIR = Path("data/processed/splits")
 TRAIN_PATH = OUT_DIR / "pairs_train.csv"

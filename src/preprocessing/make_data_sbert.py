@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import normalize
 
 RESUME_PATH = "data/processed/cleaned/resumes_clean.csv"
 JOBS_PATH = "data/processed/cleaned/jobs_model.csv"
@@ -8,6 +10,8 @@ MODEL_NAME = "all-MiniLM-L6-v2"
 
 pos = 5
 neg = 100
+HARD_NEG = 50   # hard negatives per resume (from TF-IDF ranking)
+EASY_NEG = 50   # easy negatives per resume (random from bottom half)
 
 EXCLUDE_TOP_FOR_NEG = 200
 LOW_SIM_PERCENTILE = 50
@@ -43,15 +47,26 @@ job_embs = model.encode(
 # embeddings are already L2-normalized so dot product == cosine similarity
 sims_matrix = res_embs @ job_embs.T  # shape: (n_resumes, n_jobs)
 
+# TF-IDF similarity matrix for hard negative mining
+print("Building TF-IDF similarity matrix...")
+tfidf = TfidfVectorizer(max_features=50000, sublinear_tf=True)
+all_texts = resumes["text"].tolist() + jobs["text"].tolist()
+tfidf.fit(all_texts)
+
+res_tfidf = normalize(tfidf.transform(resumes["text"].tolist()))
+job_tfidf = normalize(tfidf.transform(jobs["text"].tolist()))
+tfidf_matrix = (res_tfidf @ job_tfidf.T).toarray()  # shape: (n_resumes, n_jobs)
+
 pairs = []
 
 for i, rid in enumerate(resume_ids):
-    sims = sims_matrix[i]  # (n_jobs,)
+    sims = sims_matrix[i]       # SBERT similarities for this resume
+    tfidf_sims = tfidf_matrix[i]  # TF-IDF similarities for this resume
     order = np.argsort(-sims)
 
     # positives: top-K by SBERT similarity
-    pos_idx = order[:pos]
-    for rank, j in enumerate(pos_idx, start=1):
+    pos_idx = set(order[:pos].tolist())
+    for rank, j in enumerate(list(pos_idx), start=1):
         pairs.append({
             "resume_id": rid,
             "job_id": job_ids[j],
@@ -60,19 +75,32 @@ for i, rid in enumerate(resume_ids):
             "sbert_cosine": float(sims[j]),
         })
 
-    # negatives: exclude top-N, sample from bottom half
+    # hard negatives: top of TF-IDF ranking, excluding SBERT positives
+    tfidf_order = np.argsort(-tfidf_sims)
+    hard_pool = [j for j in tfidf_order if j not in pos_idx][:HARD_NEG * 3]
+    rng = np.random.default_rng(42 + i)
+    hard_size = min(HARD_NEG, len(hard_pool))
+    hard_idx = rng.choice(hard_pool, size=hard_size, replace=False)
+
+    for j in hard_idx:
+        pairs.append({
+            "resume_id": rid,
+            "job_id": job_ids[j],
+            "label": 0,
+            "rank": None,
+            "sbert_cosine": float(sims[j]),
+        })
+
+    # easy negatives: random from bottom half of SBERT similarity
     exclude = min(EXCLUDE_TOP_FOR_NEG, len(order) - 1)
     candidate = order[exclude:]
-
     cutoff = np.percentile(sims, LOW_SIM_PERCENTILE)
     low_pool = candidate[sims[candidate] <= cutoff]
-    pool = low_pool if len(low_pool) >= neg else candidate
+    easy_pool = low_pool if len(low_pool) >= EASY_NEG else candidate
+    replace = len(easy_pool) < EASY_NEG
+    easy_idx = rng.choice(easy_pool, size=EASY_NEG, replace=replace)
 
-    rng = np.random.default_rng(42 + i)
-    replace = len(pool) < neg
-    neg_idx = rng.choice(pool, size=neg, replace=replace)
-
-    for j in neg_idx:
+    for j in easy_idx:
         pairs.append({
             "resume_id": rid,
             "job_id": job_ids[j],
@@ -88,6 +116,6 @@ print(check.head())
 print(f"Any resume missing {pos} positives?", (check.get(1, 0) != pos).any())
 print(f"Any resume missing {neg} negatives?", (check.get(0, 0) != neg).any())
 
-OUT_PATH = f"data/processed/pairs_sbert_k{pos}_n{neg}.csv"
+OUT_PATH = f"data/processed/pairs_sbert_k{pos}_hard{HARD_NEG}_easy{EASY_NEG}.csv"
 pairs_df.to_csv(OUT_PATH, index=False)
 print("Saved:", OUT_PATH, "rows:", len(pairs_df))

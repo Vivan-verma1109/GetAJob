@@ -12,14 +12,22 @@ class TfidfTower(nn.Module):
 
     def __init__(self, tfidf_dim: int, embed_dim: int = 128, dropout: float = 0.1):
         super().__init__()
-        self.proj = nn.Linear(tfidf_dim, embed_dim)
-        self.drop = nn.Dropout(dropout)
+        hidden = 512
+        self.net = nn.Sequential(
+            nn.Linear(tfidf_dim, hidden),
+            nn.LayerNorm(hidden),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden, 256),
+            nn.LayerNorm(256),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, embed_dim),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.drop(x)
-        z = self.proj(x)
-        z = F.normalize(z, p=2, dim=1) # unit vectors
-        return z
+        z = self.net(x)
+        return F.normalize(z, p=2, dim=1)
 
 
 class TwoTowerTfidf(nn.Module):
